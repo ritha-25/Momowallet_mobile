@@ -1,5 +1,5 @@
-import '../models/transaction.dart';
-import '../models/wallet.dart';
+import '../model/transaction.dart';
+import '../model/wallet.dart';
 
 class MockWalletRepository {
   Wallet load() {
