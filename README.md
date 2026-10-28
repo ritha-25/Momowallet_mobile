@@ -4,7 +4,7 @@ A Flutter wallet app that simulates MTN MoMo. Money and transactions are saved o
 
 ## Screenshots
 
-![Before closing](screenshot/Before.png)
+![Before closinng](screenshot/Before.png)
 ![After running again](screenshot/After.png)
 ![Live data from an API](screenshot/rateapi.png)
 ![No internet](screenshot/no-internet.png)
