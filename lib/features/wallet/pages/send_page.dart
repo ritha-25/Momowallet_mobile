@@ -12,6 +12,13 @@ class _SendPageState extends State<SendPage> {
   final _phoneCtrl = TextEditingController();
   final _amountCtrl = TextEditingController();
 
+  @override
+  void dispose() {
+    _phoneCtrl.dispose();
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
   void _send() {
     final phone = _phoneCtrl.text.trim();
     final amount = int.tryParse(_amountCtrl.text.trim());

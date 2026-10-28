@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../theme/appTheme.dart';
+import '../../../theme/app_theme.dart';
 import '../../../data/model/transaction.dart';
 import '../../../data/repositories/walletrepo.dart';
-import 'sendPage.dart';
-import 'HomePage.dart';
+import 'cashout_page.dart';
+import 'send_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -141,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                       final color = t.isIn ? AppColors.green : AppColors.red;
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: color.withOpacity(0.15),
+                          backgroundColor: color.withValues(alpha: 0.15),
                           child: Icon(
                             t.isIn ? Icons.arrow_downward : Icons.arrow_upward,
                             color: color,
@@ -188,7 +188,7 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 6,
                 offset: const Offset(0, 2)),
           ],

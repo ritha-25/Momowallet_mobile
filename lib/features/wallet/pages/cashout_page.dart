@@ -14,6 +14,12 @@ class _CashoutPageState extends State<CashoutPage> {
 
   static const notes = [5000, 2000, 1000, 500, 100];
 
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    super.dispose();
+  }
+
   void _preview() {
     final amount = int.tryParse(_amountCtrl.text.trim());
     if (amount == null || amount < 100) {
