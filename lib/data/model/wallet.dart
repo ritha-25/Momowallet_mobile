@@ -39,7 +39,7 @@ class Wallet {
     await preference.setInt(balanceKey, balance);
     await preference.setString(
       transKey,
-      jsonEncode(transactions.map((t) => t.tojson()).toList()),
+      jsonEncode(transactions.map((t) => t.toJson()).toList()),
     );
   }
 

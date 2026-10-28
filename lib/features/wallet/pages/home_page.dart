@@ -5,6 +5,7 @@ import '../../../data/model/wallet.dart';
 import '../../../data/repositories/walletrepo.dart';
 import 'cashout_page.dart';
 import 'send_page.dart';
+import 'rate_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -121,21 +122,32 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _actionBtn(
-                      icon: Icons.send, label: 'Send', onTap: _openSend),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _actionBtn(
-                      icon: Icons.atm, label: 'Cash out', onTap: _openCashout),
-                ),
-              ],
-            ),
+  padding: const EdgeInsets.symmetric(horizontal: 16),
+  child: Row(
+    children: [
+      Expanded(
+        child: _actionBtn(
+            icon: Icons.send, label: 'Send', onTap: _openSend),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: _actionBtn(
+            icon: Icons.atm, label: 'Cash out', onTap: _openCashout),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: _actionBtn(
+          icon: Icons.currency_exchange,
+          label: 'Rates',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const RatesPage()),
           ),
+        ),
+      ),
+    ],
+  ),
+),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
