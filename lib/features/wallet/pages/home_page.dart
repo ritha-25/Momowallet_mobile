@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_theme.dart';
 import '../../../data/model/transaction.dart';
+import '../../../data/model/wallet.dart';
 import '../../../data/repositories/walletrepo.dart';
 import 'cashout_page.dart';
 import 'send_page.dart';
@@ -13,63 +14,90 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late final wallet = MockWalletRepository().load();
+  Wallet? wallet;
   String filter = 'All';
 
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final loaded = await MockWalletRepository().load();
+    if (!mounted) return;
+    setState(() => wallet = loaded);
+  }
+
   List<Transaction> get shown {
-    if (filter == 'IN') return wallet.transactions.where((t) => t.isIn).toList();
-    if (filter == 'OUT') return wallet.transactions.where((t) => !t.isIn).toList();
-    return wallet.transactions;
+    final all = wallet!.transactions;
+    if (filter == 'IN') return all.where((t) => t.isIn).toList();
+    if (filter == 'OUT') return all.where((t) => !t.isIn).toList();
+    return all;
   }
 
   Future<void> _openSend() async {
     final amount = await Navigator.push<int>(
       context,
-      MaterialPageRoute(builder: (_) => SendPage(balance: wallet.balance)),
+      MaterialPageRoute(builder: (_) => SendPage(balance: wallet!.balance)),
     );
-    if (amount != null && mounted) {
-      setState(() => wallet.addOut(amount, 'Sent money'));
-      _toast('Sent $amount RWF');
-    }
+    if (amount == null || !mounted) return;
+
+    await wallet!.addOut(amount, 'Sent money');
+    if (!mounted) return;
+    setState(() {});
+    _toast('Sent $amount RWF');
   }
 
   Future<void> _openCashout() async {
     final amount = await Navigator.push<int>(
       context,
-      MaterialPageRoute(builder: (_) => CashoutPage(balance: wallet.balance)),
+      MaterialPageRoute(builder: (_) => CashoutPage(balance: wallet!.balance)),
     );
-    if (amount != null && mounted) {
-      setState(() => wallet.addOut(amount, 'Cash out'));
-      _toast('Cashed out $amount RWF');
-    }
+    if (amount == null || !mounted) return;
+
+    await wallet!.addOut(amount, 'Cash out');
+    if (!mounted) return;
+    setState(() {});
+    _toast('Cashed out $amount RWF');
   }
 
-  void _delete(Transaction t) {
-    final index = wallet.transactions.indexOf(t);
-    setState(() => wallet.remove(t, index));
+  Future<void> _delete(Transaction t) async {
+    final index = wallet!.transactions.indexOf(t);
+    await wallet!.remove(t, index);
+    if (!mounted) return;
+    setState(() {});
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('${t.description} deleted'),
         action: SnackBarAction(
           label: 'Undo',
-          onPressed: () => setState(() => wallet.restore(t, index)),
+          onPressed: () async {
+            await wallet!.restore(t, index);
+            if (mounted) setState(() {});
+          },
         ),
       ),
     );
   }
 
   void _toast(String m) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(m)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
   }
 
   @override
   Widget build(BuildContext context) {
+    if (wallet == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('MoMo Wallet')),
       body: Column(
         children: [
-         
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(16),
@@ -84,7 +112,7 @@ class _HomePageState extends State<HomePage> {
                 const Text('Available balance',
                     style: TextStyle(color: AppColors.dark, fontSize: 14)),
                 const SizedBox(height: 6),
-                Text('${wallet.balance} RWF',
+                Text('${wallet!.balance} RWF',
                     style: const TextStyle(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -92,7 +120,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-          
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -110,7 +137,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: 16),
-          
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -130,7 +156,6 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
-         
           Expanded(
             child: shown.isEmpty
                 ? const Center(child: Text('No transactions yet'))
