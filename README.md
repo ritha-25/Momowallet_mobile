@@ -5,10 +5,17 @@ A Flutter wallet app that simulates MTN MoMo. Money and transactions are saved o
 ## Screenshots
 
 ![Before closing](screenshot/Before.png)
+*The wallet after sending money and cashing out, with the updated balance and transaction history.*
 ![After running again](screenshot/After.png)
+*The exact same screen after completely closing and reopening the app, proving the data persists using shared_preferences.*
+
 ![Live data from an API](screenshot/rateapi.png)
+*The exchange rate screen loading live USD to RWF rates from the National Bank of Rwanda API.*
 ![No internet](screenshot/No%20internet.png)
+*The error state and Retry button shown when the device is in airplane mode and the API call fails.*
+
 ![Result exchange ui](screenshot/Result.png)
+*The result screen showing the converted exchange UI.*
 
 ## What the app does
 
