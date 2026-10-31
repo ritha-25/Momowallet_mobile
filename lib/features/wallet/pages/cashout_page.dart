@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 class CashoutPage extends StatefulWidget {
-  const CashoutPage({super.key, required this.balance});
-  final int balance;
+  const CashoutPage({super.key});
 
   @override
   State<CashoutPage> createState() => _CashoutPageState();
@@ -14,13 +13,7 @@ class _CashoutPageState extends State<CashoutPage> {
 
   static const notes = [5000, 2000, 1000, 500, 100];
 
-  @override
-  void dispose() {
-    _amountCtrl.dispose();
-    super.dispose();
-  }
-
-  void _preview() {
+  void _previewNotes() {
     final amount = int.tryParse(_amountCtrl.text.trim());
     if (amount == null || amount < 100) {
       _err('Amount must be at least 100 RWF');
@@ -30,10 +23,7 @@ class _CashoutPageState extends State<CashoutPage> {
       _err('Amount must be a multiple of 100');
       return;
     }
-    if (amount > widget.balance) {
-      _err('Insufficient balance');
-      return;
-    }
+    
     var remaining = amount;
     final result = <int, int>{};
     for (final n in notes) {
@@ -62,9 +52,6 @@ class _CashoutPageState extends State<CashoutPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Balance: ${widget.balance} RWF',
-                style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 20),
             TextField(
               controller: _amountCtrl,
               keyboardType: TextInputType.number,
@@ -75,7 +62,7 @@ class _CashoutPageState extends State<CashoutPage> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-                onPressed: _preview, child: const Text('Preview notes')),
+                onPressed: _previewNotes, child: const Text('Preview notes')),
             const SizedBox(height: 16),
             if (preview != null)
               Container(

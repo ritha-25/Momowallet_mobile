@@ -1,11 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart'
+show FieldValue, FirebaseException, QuerySnapshot;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../../theme/app_theme.dart';
+
 import '../../../data/model/transaction.dart';
-import '../../../data/model/wallet.dart';
-import '../../../data/repositories/walletrepo.dart';
+import '../../../theme/app_theme.dart';
 import 'cashout_page.dart';
-import 'send_page.dart';
 import 'rate_page.dart';
+import 'send_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,206 +17,273 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  Wallet? wallet;
-  String filter = 'All';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final loaded = await MockWalletRepository().load();
-    if (!mounted) return;
-    setState(() => wallet = loaded);
-  }
-
-  List<Transaction> get shown {
-    final all = wallet!.transactions;
-    if (filter == 'IN') return all.where((t) => t.isIn).toList();
-    if (filter == 'OUT') return all.where((t) => !t.isIn).toList();
-    return all;
-  }
+  String _filter = 'All';
 
   Future<void> _openSend() async {
-    final amount = await Navigator.push<int>(
+    final result = await Navigator.push<Map<String, Object>>(
       context,
-      MaterialPageRoute(builder: (_) => SendPage(balance: wallet!.balance)),
+      MaterialPageRoute(builder: (_) => const SendPage()),
     );
-    if (amount == null || !mounted) return;
+    if (result == null || !mounted) return;
 
-    await wallet!.addOut(amount, 'Sent money');
-    if (!mounted) return;
-    setState(() {});
-    _toast('Sent $amount RWF');
+    await _addTransaction(
+      description: result['description']! as String,
+      amount: result['amount']! as int,
+      isIn: false,
+    );
   }
 
   Future<void> _openCashout() async {
     final amount = await Navigator.push<int>(
       context,
-      MaterialPageRoute(builder: (_) => CashoutPage(balance: wallet!.balance)),
+      MaterialPageRoute(builder: (_) => const CashoutPage()),
     );
     if (amount == null || !mounted) return;
 
-    await wallet!.addOut(amount, 'Cash out');
-    if (!mounted) return;
-    setState(() {});
-    _toast('Cashed out $amount RWF');
+    await _addTransaction(description: 'Cash out', amount: amount, isIn: false);
   }
 
-  Future<void> _delete(Transaction t) async {
-    final index = wallet!.transactions.indexOf(t);
-    await wallet!.remove(t, index);
-    if (!mounted) return;
-    setState(() {});
+  Future<void> _addTransaction({
+    required String description,
+    required int amount,
+    required bool isIn,
+  }) async {
+    try {
+      await myTransactions().add({
+        ...Transaction(
+          description: description,
+          amount: amount,
+          isIn: isIn,
+        ).toMap(),
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      if (mounted) _toast('$description recorded');
+    } on FirebaseException catch (error) {
+      if (mounted) _toast('Could not save transaction: ${error.message}');
+    }
+  }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${t.description} deleted'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () async {
-            await wallet!.restore(t, index);
-            if (mounted) setState(() {});
-          },
+  Future<void> _delete(Transaction transaction) async {
+    try {
+      await myTransactions().doc(transaction.id).delete();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${transaction.description} deleted'),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => _addTransaction(
+              description: transaction.description,
+              amount: transaction.amount,
+              isIn: transaction.isIn,
+            ),
+          ),
         ),
-      ),
-    );
+      );
+    } on FirebaseException catch (error) {
+      if (mounted) _toast('Could not delete transaction: ${error.message}');
+    }
   }
 
-  void _toast(String m) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m)));
+  void _toast(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (wallet == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('MoMo Wallet')),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.momoYellow,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Available balance',
-                    style: TextStyle(color: AppColors.dark, fontSize: 14)),
-                const SizedBox(height: 6),
-                Text('${wallet!.balance} RWF',
-                    style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.dark)),
-              ],
-            ),
+      appBar: AppBar(
+        title: const Text('MoMo Wallet'),
+        actions: [
+          IconButton(
+            tooltip: 'Sign out',
+            onPressed: () => FirebaseAuth.instance.signOut(),
+            icon: const Icon(Icons.logout),
           ),
-          Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 16),
-  child: Row(
-    children: [
-      Expanded(
-        child: _actionBtn(
-            icon: Icons.send, label: 'Send', onTap: _openSend),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: _actionBtn(
-            icon: Icons.atm, label: 'Cash out', onTap: _openCashout),
-      ),
-      const SizedBox(width: 8),
-      Expanded(
-        child: _actionBtn(
-          icon: Icons.currency_exchange,
-          label: 'Rates',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const RatesPage()),
-          ),
-        ),
-      ),
-    ],
-  ),
-),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                for (final f in ['All', 'IN', 'OUT'])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(f),
-                      selected: filter == f,
-                      onSelected: (_) => setState(() => filter = f),
-                    ),
-                  ),
-                const Spacer(),
-                Text('${shown.length} txns',
-                    style: const TextStyle(color: Colors.grey, fontSize: 12)),
-              ],
+          IconButton(
+            tooltip: 'Exchange rates',
+            onPressed: () => Navigator.push<void>(
+              context,
+              MaterialPageRoute(builder: (_) => const RatesPage()),
             ),
-          ),
-          Expanded(
-            child: shown.isEmpty
-                ? const Center(child: Text('No transactions yet'))
-                : ListView.builder(
-                    itemCount: shown.length,
-                    itemBuilder: (context, index) {
-                      final t = shown[index];
-                      final color = t.isIn ? AppColors.green : AppColors.red;
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: color.withValues(alpha: 0.15),
-                          child: Icon(
-                            t.isIn ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: color,
-                          ),
-                        ),
-                        title: Text(t.description),
-                        subtitle: Text(t.isIn ? 'IN' : 'OUT',
-                            style: TextStyle(color: color)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${t.isIn ? "+" : "-"}${t.amount}',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, color: color),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.grey, size: 20),
-                              onPressed: () => _delete(t),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+            icon: const Icon(Icons.currency_exchange),
           ),
         ],
+      ),
+      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+        stream: myTransactions().snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text('Could not load transactions: ${snapshot.error}'),
+              ),
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final transactions =
+              snapshot.data!.docs.map(Transaction.fromDoc).toList()..sort(
+                (a, b) =>
+                    (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+                        .compareTo(
+                          a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+                        ),
+              );
+          final shown = switch (_filter) {
+            'IN' =>
+              transactions.where((transaction) => transaction.isIn).toList(),
+            'OUT' =>
+              transactions.where((transaction) => !transaction.isIn).toList(),
+            _ => transactions,
+          };
+          final balance = transactions.fold<int>(
+            0,
+            (total, transaction) => transaction.isIn
+                ? total + transaction.amount
+                : total - transaction.amount,
+          );
+
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.momoYellow,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Available balance',
+                      style: TextStyle(color: AppColors.dark, fontSize: 14),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '$balance RWF',
+                      style: const TextStyle(
+                        color: AppColors.dark,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _actionButton(
+                        icon: Icons.send,
+                        label: 'Send',
+                        onTap: _openSend,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _actionButton(
+                        icon: Icons.atm,
+                        label: 'Cash out',
+                        onTap: _openCashout,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    for (final filter in ['All', 'IN', 'OUT'])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(filter),
+                          selected: _filter == filter,
+                          onSelected: (_) => setState(() => _filter = filter),
+                        ),
+                      ),
+                    const Spacer(),
+                    Text(
+                      '${shown.length} txns',
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: shown.isEmpty
+                    ? const Center(child: Text('No transactions yet'))
+                    : ListView.builder(
+                        itemCount: shown.length,
+                        itemBuilder: (context, index) {
+                          final transaction = shown[index];
+                          final color = transaction.isIn
+                              ? AppColors.green
+                              : AppColors.red;
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: color.withValues(alpha: 0.15),
+                              child: Icon(
+                                transaction.isIn
+                                    ? Icons.arrow_downward
+                                    : Icons.arrow_upward,
+                                color: color,
+                              ),
+                            ),
+                            title: Text(transaction.description),
+                            subtitle: Text(
+                              transaction.isIn ? 'IN' : 'OUT',
+                              style: TextStyle(color: color),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${transaction.isIn ? "+" : "-"}${transaction.amount}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: color,
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Delete transaction',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: Colors.grey,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => _delete(transaction),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  Widget _actionBtn(
-      {required IconData icon,
-      required String label,
-      required VoidCallback onTap}) {
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -225,9 +294,10 @@ class _HomePageState extends State<HomePage> {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
-                offset: const Offset(0, 2)),
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: Column(

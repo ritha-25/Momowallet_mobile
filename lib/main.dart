@@ -1,9 +1,14 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'features/wallet/pages/home_page.dart';
+
+import 'auth_gate.dart';
 import 'theme/app_theme.dart';
 
-
-void main() => runApp(const MomoApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(const MomoApp());
+}
 
 class MomoApp extends StatelessWidget {
   const MomoApp({super.key});
@@ -14,7 +19,7 @@ class MomoApp extends StatelessWidget {
       title: 'MoMo Wallet',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      home: const HomePage(),
+      home: const AuthGate(),
     );
   }
 }
