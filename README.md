@@ -17,18 +17,18 @@ A Flutter wallet app that simulates MTN MoMo. Money and transactions are saved o
 ![Result exchange ui](screenshot/Result.png)
 *The result screen showing the converted exchange UI.*
 
-![Login](screenshots/login.png)
+![Login](screenshot/login.png)
 *The login screen where users can create an account or sign in.*
 
-![My data in Firestore](screenshots/console.png)
+![My data in Firestore](screenshot/console.png)
 *The Firebase Console showing the user's transactions saved in Cloud Firestore.*
 
-![Live update](screenshots/live.png)
+![Live update](screenshot/live.png)
 *The app updating automatically in real-time when a new document is added to Firestore.*
 
-![Second account sees nothing of old account](screenshots/newaccount.png)
+![Second account sees nothing of old account](screenshot/newaccount.png)
 *A second account showing its own data, proving that users cannot see each other's transactions.*
-![first account sees nothing of old account](screenshots/oldaccount.png)
+![first account sees nothing of old account](screenshot/oldaccount.png)
 *First account's transaction.*
 ## What the app does
 
