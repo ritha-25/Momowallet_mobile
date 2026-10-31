@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1063531314358",
+    "project_id": "momo-wallet-f2012",
+    "storage_bucket": "momo-wallet-f2012.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063531314358:android:07ee82a4e95de124ddba17",
+        "android_client_info": {
+          "package_name": "com.example.momowallet"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCLTXD8psrYt5hGfQkYYJmHTT0r8XB9Rsw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
